@@ -1,0 +1,101 @@
+## Electric Production Analysis and Forecasting
+
+#Loading Electric Production Dataset
+dataset=read.csv("Electric_Production.csv")
+
+#Getting Quick overview of Data Set Structure and contents
+head(dataset)
+tail(dataset)
+
+#total Entries
+print(paste("Total Entries :-",nrow(dataset)))
+
+#Time Series Indexing 
+temp<-dataset["IPG2211A2N"]
+rownames(temp)<-dataset$DATE
+dataset=temp
+
+#Counting Missing Values
+sum(is.na(dataset))
+
+library(timeSeries)
+
+#data set to Time Series Object
+Electric_Production_Dataset=ts(dataset$IPG2211A2N,start=c(1985,1),frequency=12)
+plot(Electric_Production_Dataset)
+
+#Since as from the Graph Plotted above we can say that the Electric_Production_Dataset is Additive in nature 
+decompose_data=decompose(Electric_Production_Dataset,"additive")
+plot(decompose_data)
+
+#Plotting Trend Line
+plot(Electric_Production_Dataset)
+abline(reg=lm(Electric_Production_Dataset~time(Electric_Production_Dataset)))
+
+#Creating boxplot with cycle()
+boxplot(Electric_Production_Dataset~cycle(Electric_Production_Dataset))
+
+#Plotting Seasonl Plot
+
+library(forecast)
+ggseasonplot(Electric_Production_Dataset,ylab="Production Units",xlab="Months",main="Season Plot")
+
+#Checking Satationarity
+library(tseries)
+adf.test(Electric_Production_Dataset)
+#adf test says that the Series is Stationary so Plotting ACF
+
+acf(Electric_Production_Dataset)
+pacf(Electric_Production_Dataset)
+#acf and pacf showing non Stationarity, So from above We concluded that the Electric_Production_Dataset is not completely Stationary.
+
+#Removing Seasonality for making dataset stationary
+temp=stl(Electric_Production_Dataset,'per')
+temp1=seasadj(temp)
+plot(temp1,main="Removed Seasonality")
+Electric_Production_Dataset=temp1
+
+
+adf.test(Electric_Production_Dataset)
+#adf test says that the Series is Stationary so Plotting ACF and PACF
+acf(Electric_Production_Dataset)
+pacf(Electric_Production_Dataset)
+#Dataset is Stationarized
+
+# Plotting Simple Moving Average with 7,9,11 intervals
+plot(Electric_Production_Dataset)
+sm1<-ma(Electric_Production_Dataset,order=7)
+lines(sm1,col="red")
+sm2<-ma(Electric_Production_Dataset,order=9)
+lines(sm2,col="green")
+sm3<-ma(Electric_Production_Dataset,order=11)
+lines(sm3,col="blue")
+
+#applying single exponential smothing with Different values of alpha
+plot(Electric_Production_Dataset,main="Single Exponentioal Smoothing")
+legend("topleft",c("Original","Alpha=0.1","Alpha=0.3","Alpha=0.5","Alpha=0.7","Alpha=0.9"),lty=c(1,1,1,1,1,1),col=c("black","red","blue","green","purple","yellow"))
+model1=ets(Electric_Production_Dataset,model="ANN",alpha = 0.1)
+lines(model1$fitted,col="red")
+model2=ets(Electric_Production_Dataset,model="ANN",alpha = 0.3)
+lines(model2$fitted,col="blue")
+model3=ets(Electric_Production_Dataset,model="ANN",alpha = 0.5)
+lines(model3$fitted,col="green")
+model4=ets(Electric_Production_Dataset,model="ANN",alpha = 0.7)
+lines(model4$fitted,col="purple")
+model5=ets(Electric_Production_Dataset,model="ANN",alpha = 0.9)
+lines(model5$fitted,col="yellow")
+forecast(model5,11)
+
+#applying Double exponential smothing with default values
+plot(Electric_Production_Dataset,main="Double Exponentioal Smoothing")
+
+model=ets(Electric_Production_Dataset,model = "AAN")
+lines(model$fitted,col="red")
+forecast(model,11)
+
+#applying Triple exponential smothing with default values
+plot(Electric_Production_Dataset,main="Triple Exponentioal Smoothing")
+
+model=ets(Electric_Production_Dataset,model = "AAA")
+lines(model$fitted,col="red")
+forecast(model,11)
